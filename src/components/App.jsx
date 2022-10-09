@@ -27,12 +27,12 @@ export class App extends Component {
     const dateFromApi = await requestPhoto(name, page);
     const totalPage = Math.ceil(dateFromApi.totalHits / 12);
     let filteredData = dateFromApi.hits.map(n => {
-      const k = {
+      const neededData = {
         id: n.id,
         webformatURL: n.webformatURL,
         largeImageURL: n.largeImageURL,
       };
-      return k;
+      return neededData;
     });
     if (filteredData.length === 0) {
       toast.error('No matches for this query.');
