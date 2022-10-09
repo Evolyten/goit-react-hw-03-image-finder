@@ -5,6 +5,7 @@ import { requestPhoto } from 'components/service/APIService';
 import { Modal } from './Modal/Modal';
 import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
+import toast, { Toaster } from 'react-hot-toast';
 const listStatus = {
   idle: 'IDLE',
   pending: 'PENDING',
@@ -17,21 +18,34 @@ export class App extends Component {
     name: '',
     images: [],
     page: 1,
-    modal: false,
+    modal: null,
     status: listStatus.idle,
   };
 
   pushDataToState = async (name, page) => {
     this.setState({ status: listStatus.pending });
-    const data = await requestPhoto(name, page);
-    if (data.length === 0) {
-      alert('No matches for this query');
+    const dateFromApi = await requestPhoto(name, page);
+    const totalPage = Math.ceil(dateFromApi.totalHits / 12);
+    let filteredData = dateFromApi.hits.map(n => {
+      const k = {
+        id: n.id,
+        webformatURL: n.webformatURL,
+        largeImageURL: n.largeImageURL,
+      };
+      return k;
+    });
+    if (filteredData.length === 0) {
+      toast.error('No matches for this query.');
       this.setState({ status: listStatus.reject });
     } else {
       this.setState(prevState => ({
-        images: [...prevState.images, ...data],
+        images: [...prevState.images, ...filteredData],
       }));
       this.setState({ status: listStatus.resolved });
+    }
+    if (this.state.page === totalPage) {
+      toast.error('This is last page.');
+      this.setState({ status: listStatus.reject });
     }
   };
 
@@ -40,19 +54,12 @@ export class App extends Component {
     const nextName = this.state.name;
     const prevPage = prevState.page;
     const nextPage = this.state.page;
-    const nextModal = this.state.modal;
     if (prevName !== nextName) {
       this.setState({ images: [], page: 1 });
       this.pushDataToState(nextName, 1);
     }
     if (prevPage !== nextPage && prevPage < nextPage) {
       this.pushDataToState(nextName, nextPage);
-    }
-    if (nextModal) {
-      window.addEventListener('keydown', this.addKeyListener);
-    }
-    if (!nextModal) {
-      window.removeEventListener('keydown', this.addKeyListener);
     }
   }
 
@@ -71,11 +78,6 @@ export class App extends Component {
   closeModal = () => {
     this.setState({ modal: false });
   };
-  addKeyListener = e => {
-    if (e.code === 'Escape') {
-      this.closeModal();
-    }
-  };
 
   render() {
     const { status, modal, images } = this.state;
@@ -93,14 +95,9 @@ export class App extends Component {
         {status === listStatus.resolved && (
           <Button incrementPage={this.takeMorePage} />
         )}
-        {modal && (
-          <Modal
-            currentImg={modal}
-            closeModal={this.closeModal}
-            keyListener={this.addKeyListener}
-          />
-        )}
+        {modal && <Modal currentImg={modal} closeModal={this.closeModal} />}
         {status === listStatus.pending && <Loader />}
+        <Toaster position="top-right" reverseOrder={true} />
       </div>
     );
   }
