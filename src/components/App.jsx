@@ -76,7 +76,7 @@ export class App extends Component {
     this.setState({ modal: pickedImg });
   };
   closeModal = () => {
-    this.setState({ modal: false });
+    this.setState({ modal: null });
   };
 
   render() {
